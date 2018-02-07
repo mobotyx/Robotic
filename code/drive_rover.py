@@ -56,7 +56,7 @@ class RoverState():
         self.ground_truth = ground_truth_3d # Ground truth worldmap
         self.mode = 'forward' # Current mode (can be forward or stop)
         self.throttle_set = 0.3 # Throttle setting when accelerating
-        self.brake_set = 10 # Brake setting when braking
+        self.brake_set = 2 # Brake setting when braking
         # The stop_forward and go_forward fields below represent total count
         # of navigable terrain pixels.  This is a very crude form of knowing
         # when you can keep going and when you should stop.  Feel free to
@@ -67,8 +67,8 @@ class RoverState():
         self.stop_front_corr = 20 # Threshold to the front
         self.go_forward = 190 # Threshold to go forward again
 
-        self.max_vel = 5 # Maximum velocity (meters/second)
-        self.slow_vel = 2 # Rover slow speed setting
+        self.max_vel = 10 # Maximum velocity (meters/second)
+        self.slow_vel = 1 # Rover slow speed setting
         
         self.nav_ang_thres = 10 # Mean steering angle threshold for full speed ahead
         self.nav_dis_thres = 25 # Mean navigation distance for full speed ahead
