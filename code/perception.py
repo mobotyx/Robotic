@@ -1,3 +1,5 @@
+# perception_step is from the project walkthrough youtube video
+
 import numpy as np
 import cv2
 

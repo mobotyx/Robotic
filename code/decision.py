@@ -26,7 +26,7 @@ def stop_rover(Rover, brake_set):
 
 # This is where you can build a decision tree for determining throttle, brake and steer 
 # commands based on the output of the perception_step() function
-def decision_step(Rover):
+def decision_step(Rover, collect = False):
     
     # Check if we have vision data to make decisions with
     if Rover.n_pix_front is not None:
@@ -34,7 +34,7 @@ def decision_step(Rover):
         #print(len(Rover.n_pix_front))
         if Rover.mode == 'forward': 
             # go to align mode when a rock is seen
-            if Rover.seeing_rock is True and Rover.rock_dist < 100:
+            if collect is True and Rover.seeing_rock is True and Rover.rock_dist < 100:
                     Rover.mode = 'align'
             
             elif len(Rover.n_pix_front) > Rover.go_forward:
@@ -42,7 +42,7 @@ def decision_step(Rover):
                 # Go a little faster if area ahead is big enougth
                 if (abs(nav_angles_deg) < Rover.nav_ang_thres and np.mean(Rover.nav_dists) > Rover.nav_dis_thres):
                     drive_rover(Rover, Rover.max_vel, nav_angles_deg)
-                # Otherwire, reduce speed
+                # Otherwise, reduce speed
                 else:
                     drive_rover(Rover, Rover.slow_vel, nav_angles_deg)
 
