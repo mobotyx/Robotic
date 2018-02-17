@@ -73,7 +73,7 @@ The rover navigation logic implements multiple states
 
 * _align_: when a rock is detected and we wish to collect it, we set the driving mode to this state. The rover will kick-in an align logic based on the polar coordinate of the rock with reference to the rover coordinates frame.
 
-* _collect_: this state is always activated from the _align_ state. When the _align_ step determine that the rover is rhoughtly aligned with the rock, it will switch the mode to _collect_ in order to make the final approach to pick-up the rock.
+* _collect_: this state is always activated from the _align_ state. When the _align_ step determine that the rover is roughly aligned with the rock, it will switch the mode to _collect_ in order to make the final approach to pick-up the rock.
 
 Depending on the given state, the following two function can be called 
 
@@ -83,27 +83,44 @@ Depending on the given state, the following two function can be called
 
 ### Obstacle Avoidance 
 
-Given the 
+In the perception file, we determine the navigable terrain vs obstacles. This data is fed to the decision tree in the form of lists of x,y coordinates of all the navigable pixels in the rover coordinate frame.
+
+To avoid obstacles, a simple concept have been implemented. As illustrated in the image below, we determine a simple box just in front of the rover. It represent a safety zone. We calculate the amount of navigable pixels as a ratio to the total number of pixels in the box. 
+
+For instance, if the box is 1 meter large by 1 meter long, then we can have a total amount of 10x10 = 100 pixels inside the box (see notebook for explanation about pix to meter conversion)
+
+Given a ratio parameter, let's say 70%, when the navigable pixels is more than 70% of the total number of possible pixels, we drive forward, otherwise we initiate a stop. 
+
+One rule of thumb to determine the box size is to give enough space each side that the rover fits in and a distance forward that depend on the rover braking capability  
+  
 ![GitHub Logo](/misc/safety_box.png)
 
+### Fast and Low Speed 
 
+As described earlier, the rover can drive two speeds, max velocity or reduced speed. The speed setting is determined in the following code snippet 
 
+```python
+if (abs(nav_angles_deg) < Rover.nav_ang_thres and np.mean(Rover.nav_dists) > Rover.nav_dis_thres):
+	drive_rover(Rover, Rover.max_vel, nav_angles_deg)
+    # Otherwise, reduce speed
+else:
+	drive_rover(Rover, Rover.slow_vel, nav_angles_deg)
+```
 
+Basically, as long as the rover is in the _forward_ mode, we monitor how wide or narrow the navigable terrain is and how much distance we have ahead. 
 
-## Navigating Autonomously
-The file called `drive_rover.py` is what you will use to navigate the environment in autonomous mode.  This script calls functions from within `perception.py` and `decision.py`.  The functions defined in the IPython notebook are all included in`perception.py` and it's your job to fill in the function called `perception_step()` with the appropriate processing steps and update the rover map. `decision.py` includes another function called `decision_step()`, which includes an example of a conditional statement you could use to navigate autonomously.  Here you should implement other conditionals to make driving decisions based on the rover's state and the results of the `perception_step()` analysis.
+This logic compromise between speed and braking efficiency. when we are closing-in to an obstacle, we would decelerate first to a reduced speed then apply a smoother brake. 
 
-`drive_rover.py` should work as is if you have all the required Python packages installed. Call it at the command line like this: 
+This improvement has also an effect in the image stability. The more the rover brakes hard from a high speed, higher is the pitch transition amplitude during the brake. And if the rover is close enough to an obstacle, the pitch would induce errors in mapping and the navigable terrain at the specific position where the brake happened would overshoot (camera pitching with the rover)
 
-```sh
-python drive_rover.py
-```  
+Note : A further improvement of this logic is to add more speed levels or deceleration zones.
 
-Then launch the simulator and choose "Autonomous Mode".  The rover should drive itself now!  It doesn't drive that well yet, but it's your job to make it better!  
+## Further Improvements
 
-**Note: running the simulator with different choices of resolution and graphics quality may produce different results!  Make a note of your simulator settings in your writeup when you submit the project.**
+Some limitation are observed during the test runs and there is room for improvement
 
-### Project Walkthrough
-If you're struggling to get started on this project, or just want some help getting your code up to the minimum standards for a passing submission, we've recorded a walkthrough of the basic implementation for you but **spoiler alert: this [Project Walkthrough Video](https://www.youtube.com/watch?v=oJA6QHDPdQw) contains a basic solution to the project!**.
+1. __Deceleration zones__ : Adding more deceleration set points given the navigable terrain forward would make the final braking smoother, thus smaller transitional pitch amplitude.
 
+2. __Collection samples__ : The current logic for samples collection assume that when the mode switch to _align_ and _collect_ , no obstacle is between the rover and the sample based on the fact that if we see it, we can reach it. But this has one limitation: if there is no space in each side where the rover can fit in, the operation would result in the rover hitting an obstacle in its right or left side. This behavior is observed when a rock is placed in a region almost surrounded with obstacles, but still a free line of sight in relation to the rover.
 
+3.  __Steering___ : The steering angle is hard-coded to -15 when the rover has to turn close to an obstacle. in some case, it is best to turn the other way. An improvement would be to keep a short history of the navigable terrain and when the rover initiate the brake, it will revisit this history to determine how the terrain was behind and decide either it will turn left or right.
