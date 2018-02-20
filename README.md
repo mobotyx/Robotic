@@ -1,3 +1,4 @@
+
 # Search and Sample Return Project
 
 This project is modeled after the [NASA sample return challenge](https://www.nasa.gov/directorates/spacetech/centennial_challenges/sample_return_robot/index.html) and is part of the first Project to submit for the Udacity Robot Engineer nanodegree.
@@ -60,7 +61,7 @@ This will kill any python running process and make sure that the socket connecti
 
 ## Perception Of the Environment 
 
-In order to understand the navigable environment vs obstacle regions, the Rover is equipped with a camera mounted in its front and always looking forward. The logic in relation to turning the camera image into actionable data is implemented in `perception.py`, the following are roughly the steps as implemented in`process_image()`
+In order to understand the navigable environment vs obstacle regions, the Rover is equipped with a camera mounted in its front and always looking forward. The logic in relation to turning the camera image into actionable data is implemented in `perception.py`, the following are roughly the steps as implemented in`process_image()`from the notebook and copied over to `perception_step()` in the simulation code.
 
 ### 1. Warping the Image / Perspective Transform
 
@@ -72,7 +73,8 @@ as in the code snippet, we also return a mask which represent a binary represent
 
 ### 2. Navigable terrain vs Obstacle 
 
-Given the warped image, a color threshold is applied. This is performed inside `color_thresh` which basically use an RGB threshold as a condition, applied to the original image and returning a binary array corresponding to navigable pixel or obstacle pixel.
+Given the warped image, a color threshold is applied. This is performed inside `color_thresh` which basically use an RGB threshold as a condition, applied to the original image and returning a binary array corresponding to navigable pixel or obstacle pixel. In our case, an RGB threshold of (160, 160, 160) seems to be doing well enougth in detecting sand colors and considering them as navigable terrain.
+
 ```python
     col_thres = color_thresh(warped)
     obs_map   = np.absolute(np.float32(col_thres) - 1) * mask 
@@ -103,10 +105,29 @@ One final step as far as rocks are concerned is to precisely map them in the wor
      rock_idx = np.argmin(rock_dist)
      rock_xcen = rock_x_world[rock_idx]
      rock_ycen = rock_y_world[rock_idx]
+
 ```
+### 4. Mapping to the World Map 
 
+In the simulation code, the world map is displayed in the bottom right corner of the screen. We map the navigable terrain, the obstacles and the rocks/samples to this map in different colors. Red for obstacle, Blue for Navigable terrain and white for the detected rocks/samples.
 
+For the obstacle and navigable terrain, this is performed as follows 
 
+ ```python
+    # Convert from rover to world coordinates
+    x_world, y_world = pix_to_world(xpix, ypix, xpos, ypos, yaw, world_size, scale)
+    x_obs_world, y_obs_world = pix_to_world(xobs, yobs, xpos, ypos, yaw, world_size, scale)
+      
+    # Map to World 
+    Rover.worldmap[y_world, x_world, 2] = 255    
+    Rover.worldmap[y_obs_world, x_obs_world, 0] = 255   
+    nav_pix = Rover.worldmap[:,:,2] > 0
+    Rover.worldmap[nav_pix,0] = 0
+
+```
+`pix_to_world` is a standard transformation for a given pixel point (array of points) from the rover coordinates to the world coordinates, given the rover X,Y position and Yaw angle as well as a scaling parameter to normalize to the world map.
+
+`Rover.worldmap` : this is the output image that is generated and fed to the simulator. We use the Red (0) and Blue (2) for navigable terrain and obstacles, respectively 
 
 ## Obstacle avoidance and Decision Tree
 
