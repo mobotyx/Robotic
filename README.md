@@ -129,6 +129,12 @@ For the obstacle and navigable terrain, this is performed as follows
 
 `Rover.worldmap` : this is the output image that is generated and fed to the simulator. We use the Red (0) and Blue (2) for navigable terrain and obstacles, respectively 
 
+For rock mapping, it is done in a similar fashion by using the centric coordinates as described above: 
+
+ ```python
+    Rover.worldmap[rock_ycen, rock_xcen, 1] = 255
+```
+
 ## Obstacle avoidance and Decision Tree
 
 In order to control the rover, we use a simple decision tree implemented in the `decision_step` function under `decision.py` 
