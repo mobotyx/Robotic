@@ -60,7 +60,7 @@ This will kill any python running process and make sure that the socket connecti
 
 ## Perception Of the Environment 
 
-In order to understand the navigable environment vs obstacle regions, the Rover is equipped with a camera mounted in its front and always looking forward. The logic in relation to turning the camera image into actionable data is implemented in `perception.py`, the following are roughly the steps as implemented 
+In order to understand the navigable environment vs obstacle regions, the Rover is equipped with a camera mounted in its front and always looking forward. The logic in relation to turning the camera image into actionable data is implemented in `perception.py`, the following are roughly the steps as implemented in`process_image()`
 
 ### 1. Warping the Image / Perspective Transform
 
@@ -138,11 +138,14 @@ In the perception file, we determine the navigable terrain vs obstacles. This da
 
 To avoid obstacles, a simple concept have been implemented. As illustrated in the image below, we determine a simple box just in front of the rover. It represent a safety zone. We calculate the amount of navigable pixels as a ratio to the total number of pixels in the box. 
 
+
 For instance, if the box is 1 meter large by 1 meter long, then we can have a total amount of 10x10 = 100 pixels inside the box (see notebook for explanation about pix to meter conversion)
 
 Given a ratio parameter, let's say 70%, when the navigable pixels is more than 70% of the total number of possible pixels, we drive forward, otherwise we initiate a stop. 
 
 One rule of thumb to determine the box size is to give enough space each side that the rover fits in and a distance forward that depend on the rover braking capability  
+
+![GitHub Logo](/misc/safety_box.png)
   
 ### Fast and Low Speed 
 
