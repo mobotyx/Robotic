@@ -137,7 +137,7 @@ def perception_step(Rover):
     Rover.nav_angles = angles
     Rover.nav_dists = dist
     
-    # nb pix in front direction that satisfy conditions
+    # nb pix in front direction that satisfy boxed conditions
     Rover.n_pix_front = xpix[ (ypix < Rover.stop_left_corr) & (ypix > Rover.stop_right_corr)]
     Rover.n_pix_front = Rover.n_pix_front[ (Rover.n_pix_front > bottom_offset) & (Rover.n_pix_front < Rover.stop_front_corr + bottom_offset)]
     

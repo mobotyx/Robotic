@@ -57,6 +57,57 @@ killall -s 9 python
 ```
 This will kill any python running process and make sure that the socket connection is freed. you can then run again the driver_rover.
 
+
+## Perception Of the Environment 
+
+In order to understand the navigable environment vs obstacle regions, the Rover is equipped with a camera mounted in its front and always looking forward. The logic in relation to turning the camera image into actionable data is implemented in `perception.py`, the following are roughly the steps as implemented 
+
+### 1. Warping the Image / Perspective Transform
+
+In order to relate the pixel data to Cartesian coordinates, the first step in the pipeline is to transform the image the the rover is seeing as if it was looking from the top downward into the FOV or the camera. This is accomplished by using two OpenCV functions : `cv2.getPerspectiveTransform `and `cv2.warpPerspective`. (click [here](https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_imgproc/py_geometric_transformations/py_geometric_transformations.html) for more information about the perspective transform)
+```python
+	warped, mask = perspect_transform(Rover.img, source, destination)
+```
+as in the code snippet, we also return a mask which represent a binary representation of the FOV of the camera.
+
+### 2. Navigable terrain vs Obstacle 
+
+Given the warped image, a color threshold is applied. This is performed inside `color_thresh` which basically use an RGB threshold as a condition, applied to the original image and returning a binary array corresponding to navigable pixel or obstacle pixel.
+```python
+    col_thres = color_thresh(warped)
+    obs_map   = np.absolute(np.float32(col_thres) - 1) * mask 
+```
+The obstacle map is then determined by negating the color threshold data and applying the mask. 
+
+### 3. Rock/Samples Identification  
+
+Samples are observed to be yellowish, so in order to detect them, another function that rely on the same color threshold technique as described above is implemented, but this time to keep only the yellow sample data. 
+ ```python
+ def find_rocks(img, levels=(110,110,50)):
+    rock_pix = (img[:,:,0] > levels[0]) & (img[:,:,1] > levels[1])  & (img[:,:,2] < levels[2])
+    color_select = np.zeros_like(img[:,:,0])
+    color_select[rock_pix] = 1
+    return color_select
+```
+And called as follows (note that we use the warped image before color thresholding it)
+ ```python
+    rock_map = find_rocks(warped, levels=(110,110,50))
+
+```
+One final step as far as rocks are concerned is to precisely map them in the world map. To do this, we need to select only one pixel (closest pixel) from the rock_map array and map it. this is performed as follows: 
+
+ ```python
+	 rock_x, rock_y = rover_coords(rock_map)
+	 rock_x_world, rock_y_world = pix_to_world(rock_x, rock_y, xpos, ypos, yaw, world_size, scale)
+	 rock_dist, rock_ang = to_polar_coords(rock_x, rock_y)
+     rock_idx = np.argmin(rock_dist)
+     rock_xcen = rock_x_world[rock_idx]
+     rock_ycen = rock_y_world[rock_idx]
+```
+
+
+
+
 ## Obstacle avoidance and Decision Tree
 
 In order to control the rover, we use a simple decision tree implemented in the `decision_step` function under `decision.py` 
@@ -93,8 +144,6 @@ Given a ratio parameter, let's say 70%, when the navigable pixels is more than 7
 
 One rule of thumb to determine the box size is to give enough space each side that the rover fits in and a distance forward that depend on the rover braking capability  
   
-![GitHub Logo](/misc/safety_box.png)
-
 ### Fast and Low Speed 
 
 As described earlier, the rover can drive two speeds, max velocity or reduced speed. The speed setting is determined in the following code snippet 
